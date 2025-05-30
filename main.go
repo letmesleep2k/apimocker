@@ -54,7 +54,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	var b strings.Builder
-	b.WriteString("mock-api-server\n")
+	b.WriteString("apimocker\n")
 	b.WriteString("Running endpoints:\n")
 	for _, msg := range m.messages {
 		b.WriteString("- " + msg + "\n")
@@ -189,7 +189,7 @@ func main() {
 	var configPath string
 
 	var rootCmd = &cobra.Command{
-		Use: "mock-api-server",
+		Use: "apimocker",
 		Short: "Lightweight TUI/mock REST API server",
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := loadConfig(configPath)
