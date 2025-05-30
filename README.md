@@ -40,7 +40,7 @@ sudo mv apimocker /usr/bin/
 Run the mock server specifying the configuration file:
 
 ```bash
-./apimocker -c path/to/mock.yaml
+apimocker -c path/to/mock.yaml
 ```
 
 By default, it looks for mock.yaml in the current directory.
