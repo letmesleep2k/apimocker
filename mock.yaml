@@ -1,0 +1,6 @@
+port: 8091
+endpoints:
+  - path: /users
+    method: GET
+    data: '{ "id": "uuid", "name": "name", "email": "email" }'
+    count: 5
