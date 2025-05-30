@@ -1,6 +1,25 @@
 port: 8091
 endpoints:
+  - path: /user
+    method: GET
+    data: '{ "id": "uuid", "name": "name", "email": "email" }'
+    count: 1
+  
+  - path: /user/avatar
+    method: GET
+    file: ./test-image.jpg
+
   - path: /users
     method: GET
     data: '{ "id": "uuid", "name": "name", "email": "email" }'
     count: 5
+
+  - path: /datetime
+    method: GET
+    data: '{ "date": "date", "timestamp": "timestamp" }'
+    count: 1
+
+  - path: /user/details
+    method: GET
+    count: 1
+    data: '{ "id": "uuid", "name": "name", "email": "email", "isAdmin": "bool", "age": "int", "description": "string", "latitude": "lat", "longitude": "lng", "ip": "ipv4", "site": "url", "password": "password", "phone": "phone", "birthdate": "date", "createdAt": "timestamp"}'

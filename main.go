@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ type Endpoint struct {
 	Method string `yaml:"method" json:"method"`
 	Data string `yaml:"data" json:"data"`
 	Count int `yaml:"count" json:"count"`
+	File string `yaml:"file" json:"file"`
 }
 
 type Config struct {
@@ -68,7 +70,7 @@ func loadConfig(path string) (*Config, error) {
 	}
 
 	config := &Config{}
-	if path[len(path)-5:] == ".yaml" || path[len(path)-4:] == ".yml" {
+	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
 		err = yaml.Unmarshal(file, config)
 	} else {
 		err = json.Unmarshal(file, config)
@@ -91,24 +93,34 @@ func generateFakeData(schema string, count int) ([]map[string]interface{}, error
 		return fake,nil
 	}
 
+	supported := map[string]func() interface{}{
+		"uuid": func() interface{} { return uuid.New().String() },
+		"name": func() interface{} { return faker.Name() },
+		"email": func() interface{} { return faker.Email() },
+		"bool": func() interface{} { return rand.Intn(2) == 1 },
+		"int": func() interface{} { return rand.Intn(1000) },
+		"string": func() interface{} { return faker.Word() },
+		// "city": func() interface{} { return faker.City() },
+		// "country": func() interface{} { return faker.Country() },
+		"lat": func() interface{} { return faker.Latitude() },
+		"lng": func() interface{} { return faker.Longitude() },
+		"ipv4": func() interface{} { return faker.IPv4() },
+		// "ipv6": func() interface{} { return faker.Ipv6() },
+		"url": func() interface{} { return faker.URL() },
+		"username": func() interface{} { return faker.Username() },
+		"password": func() interface{} { return faker.Password() },
+		"phone": func() interface{} { return faker.Phonenumber() },
+		"date": func() interface{} { return faker.Date() },
+		"timestamp": func() interface{} { return time.Now().Unix() },
+	}
+
 	var result []map[string]interface{}
 	for i := 0; i < count; i++ {
 		row := make(map[string]interface{})
 		for key, typ := range template {
-			switch typ {
-			case "uuid":
-				row[key] = uuid.New().String()
-			case "name":
-				row[key] = faker.Name()
-			case "email":
-				row[key] = faker.Email()
-			case "bool":
-				row[key] = rand.Intn(2) == 1
-			case "int":
-				row[key] = rand.Intn(1000)
-			case "string":
-				row[key] = faker.Word()
-			default:
+			if fn, ok := supported[typ]; ok {
+				row[key] = fn()
+			} else {
 				row[key] = nil
 			}
 		}
@@ -116,6 +128,25 @@ func generateFakeData(schema string, count int) ([]map[string]interface{}, error
 	}
 
 	return result, nil
+}
+
+func serveFileHandler(path string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ext := filepath.Ext(path)
+		switch ext := strings.ToLower(ext); ext {
+		case ".jpg", ".jpeg":
+			w.Header().Set("Content-Type", "image/jpeg")
+		case ".png":
+			w.Header().Set("Content-Type", "image/png")
+		case ".gif":
+			w.Header().Set("Content-Type", "image/gif")
+		case ".mp4":
+			w.Header().Set("Content-Type", "video/mp4")
+		default:
+			w.Header().Set("Content-Type", "application/octet-stream")
+		}
+		http.ServeFile(w, r, path)
+	}
 }
 
 func startServer(config *Config) []string {
@@ -126,6 +157,11 @@ func startServer(config *Config) []string {
 		dataCount := ep.Count
 		msg := fmt.Sprintf("[%s] http://localhost:%d%s", method, config.Port, path)
 		messages = append(messages, msg)
+
+		if ep.File != "" {
+			http.HandleFunc(path, serveFileHandler(ep.File))
+			continue
+		}
 
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != method {
