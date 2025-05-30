@@ -8,11 +8,13 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
 	faker "github.com/bxcodec/faker/v3"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +27,37 @@ type Endpoint struct {
 
 type Config struct {
 	Port int `yaml:"port" json:"port"`
-	Endpoint []Endpoint `yaml:"endpoints" json:"endpoints"`
+	Endpoints []Endpoint `yaml:"endpoints" json:"endpoints"`
+}
+
+type model struct {
+	messages []string
+}
+
+func (m model) Init() tea.Cmd {
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m model) View() string {
+	var b strings.Builder
+	b.WriteString("mock-api-server\n")
+	b.WriteString("Running endpoints:\n")
+	for _, msg := range m.messages {
+		b.WriteString("- " + msg + "\n")
+	}
+	b.WriteString("\nPress q to quit.\n")
+	return b.String()
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -56,11 +88,15 @@ func generateFakeData(schema string, count int) ([]map[string]interface{}, error
 	return fake, nil
 }
 
-func startServer(config *Config) {
-	for _, ep := range config.Endpoint {
+func startServer(config *Config) []string {
+	var messages []string
+	for _, ep := range config.Endpoints {
 		path := ep.Path
 		method := ep.Method
 		dataCount := ep.Count
+		msg := fmt.Sprintf("[%s] http://localhost:%d%s", method, config.Port, path)
+		messages = append(messages, msg)
+
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != method {
 				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -75,8 +111,11 @@ func startServer(config *Config) {
 			json.NewEncoder(w).Encode(data)
 		}) 
 	}
-	log.Printf("Starting mock server on :%d\n", config.Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d",config.Port),nil))
+	go func() {
+		log.Printf("Starting mock server on :%d\n", config.Port)
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d",config.Port),nil))
+	}()
+	return messages
 }
 
 func main() {
@@ -91,7 +130,11 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to load config: %v", err)
 			}
-			startServer(config)
+			messages := startServer(config)
+			p := tea.NewProgram(model{messages: messages})
+			if err := p.Start(); err != nil {
+				log.Fatalf("Error running TUI: %v", err)
+			}
 		},
 	}
 
