@@ -15,6 +15,7 @@ import (
 
 	faker "github.com/bxcodec/faker/v3"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -76,16 +77,45 @@ func loadConfig(path string) (*Config, error) {
 }
 
 func generateFakeData(schema string, count int) ([]map[string]interface{}, error) {
-	var fake []map[string]interface{}
-	for i:= 0; i < count; i++ {
-		data := map[string]interface{}{}
-		err := faker.FakeData(&data)
-		if err != nil {
-			return nil, err 
+	var template map[string]string
+	if err := json.Unmarshal([]byte(schema), &template); err != nil {
+		var fake []map[string]interface{}
+		for i := 0; i < count; i++ {
+			data := map[string]interface{}{}
+			err := faker.FakeData(&data)
+			if err != nil {
+				return nil, err
+			}
+			fake = append(fake, data)
 		}
-		fake = append(fake, data)
+		return fake,nil
 	}
-	return fake, nil
+
+	var result []map[string]interface{}
+	for i := 0; i < count; i++ {
+		row := make(map[string]interface{})
+		for key, typ := range template {
+			switch typ {
+			case "uuid":
+				row[key] = uuid.New().String()
+			case "name":
+				row[key] = faker.Name()
+			case "email":
+				row[key] = faker.Email()
+			case "bool":
+				row[key] = rand.Intn(2) == 1
+			case "int":
+				row[key] = rand.Intn(1000)
+			case "string":
+				row[key] = faker.Word()
+			default:
+				row[key] = nil
+			}
+		}
+		result = append(result, row)
+	}
+
+	return result, nil
 }
 
 func startServer(config *Config) []string {
@@ -115,7 +145,7 @@ func startServer(config *Config) []string {
 		log.Printf("Starting mock server on :%d\n", config.Port)
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d",config.Port),nil))
 	}()
-	return messages
+		return messages
 }
 
 func main() {
