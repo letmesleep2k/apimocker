@@ -13,6 +13,7 @@ Ideal for frontend development, testing, and API prototyping. Supports dynamic f
 - Configurable via YAML or JSON file  
 - Interactive TUI showing running endpoints and allowing graceful exit  
 - Simple CLI interface powered by Cobra
+- Support for query parameters to control response data (e.g. `?count=5&sort=name&order=desc`)
 
 ---
 
@@ -93,6 +94,26 @@ endpoints:
  - `phone`
  - `date`
  - `timestamp` (current UNIX timestamp)
+
+---
+
+## Query Parameters
+
+Dynamic JSON endpoints support optional query parameters to customize the response:
+
+| Parameter       | Description                                     |
+| --------------- | ----------------------------------------------- |
+| `count`/`limit` | Number of items to return                       |
+| `offset`        | Number of items to skip                         | 
+| `sort`          | Field name to sort by                           |
+| `order`         | `asc` (default) or `desc`                       |
+| `filter`        | Filter record by a field, format: `field:value` |
+
+### Example usage:
+
+```bash
+GET /usrs?count=10&sort=name&order=desc&filter=email:gmail.com
+```
 
 ---
 
