@@ -7,8 +7,11 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	// "sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,6 +62,13 @@ func (m model) View() string {
 	for _, msg := range m.messages {
 		b.WriteString("- " + msg + "\n")
 	}
+	b.WriteString("\nSupported query parameters:\n")
+	b.WriteString("- count: number of items to return\n")
+	b.WriteString("- sort: field to sort by\n")
+	b.WriteString("- order: asc/desc (default: asc)\n")
+	b.WriteString("- filter: field:value to filter by\n")
+	b.WriteString("- offset: number of items to skip\n")
+	b.WriteString("- limit: alias for count\n")
 	b.WriteString("\nPress q to quit.\n")
 	return b.String()
 }
@@ -130,6 +140,8 @@ func generateFakeData(schema string, count int) ([]map[string]interface{}, error
 	return result, nil
 }
 
+
+
 func serveFileHandler(path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ext := filepath.Ext(path)
@@ -154,7 +166,7 @@ func startServer(config *Config) []string {
 	for _, ep := range config.Endpoints {
 		path := ep.Path
 		method := ep.Method
-		dataCount := ep.Count
+		// dataCount := ep.Count
 		msg := fmt.Sprintf("[%s] http://localhost:%d%s", method, config.Port, path)
 		messages = append(messages, msg)
 
@@ -163,20 +175,40 @@ func startServer(config *Config) []string {
 			continue
 		}
 
+		endpoint := ep
 		http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != method {
 				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			data, err := generateFakeData(ep.Data, dataCount)
+
+			params := r.URL.Query()
+
+			count := endpoint.Count
+			if countStr := params.Get("count"); countStr != "" {
+				if parsedCount, err := strconv.Atoi(countStr); err == nil && parsedCount > 0 {
+					count = parsedCount
+				}
+			}
+			generateCount := count
+	
+			data, err := generateFakeData(endpoint.Data, generateCount)
 			if err != nil {
 				http.Error(w, "Failed to generate data", http.StatusInternalServerError)
 				return
 			}
+
+			filteredData := applyQueryFilters(data, params)
+
+			response := map[string]interface{}{
+				"data": filteredData,
+			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(data)
-		}) 
+			json.NewEncoder(w).Encode(response)
+
+		})
 	}
+
 	go func() {
 		log.Printf("Starting mock server on :%d\n", config.Port)
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d",config.Port),nil))
