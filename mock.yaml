@@ -23,3 +23,38 @@ endpoints:
     method: GET
     count: 1
     data: '{ "id": "uuid", "name": "name", "email": "email", "isAdmin": "bool", "age": "int", "description": "string", "latitude": "lat", "longitude": "lng", "ip": "ipv4", "site": "url", "password": "password", "phone": "phone", "birthdate": "date", "createdAt": "timestamp"}'
+
+  - path: /userd
+    method: GET
+    status: 200
+    delay: 1s
+    headers:
+      X-Test-Mode: "true"
+      X-API-Version: "v1"
+      X-Custom-Header: "GoodNight!"
+    data: |
+      {
+        "id": "uuid",
+        "name": "name",
+        "email": "email"
+      }
+    errors:
+      - probability: 0.1
+        status: 500
+        message: "Internal server error"
+      - probability: 0.1
+        status: 429
+        message: "Rate limit exceeded"
+  
+  - path: /products
+    method: GET
+    status: 201
+    delay: 1s
+    headers:
+      Cache-Control: "no-cache"
+    data: |
+      {
+        "id": "uuid",
+        "title": "string",
+        "price": "int"
+      }
