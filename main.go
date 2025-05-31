@@ -79,11 +79,6 @@ func (m model) View() string {
 	b.WriteString("- filter: field:value to filter by\n")
 	b.WriteString("- offset: number of items to skip\n")
 	b.WriteString("- limit: alias for count\n")
-	b.WriteString("Additional features:\n")
-	b.WriteString("- Custom status codes\n")
-	b.WriteString("- Response delays\n")
-	b.WriteString("- Custom headers\n")
-	b.WriteString("- Error simulation\n")
 	b.WriteString("\nPress q to quit.\n")
 	return b.String()
 }
