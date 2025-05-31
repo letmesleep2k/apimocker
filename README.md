@@ -61,6 +61,18 @@ endpoints:
     method: GET
     count: 5
     data: '{"id": "uuid", "name": "name", "email": "email"}'
+    status: 200
+    delay: "500ms"
+    headers:
+        X-Custom-Header: "ReverofAtir!"
+    errors:
+        - probability: 0.2
+          status: 500
+          message: "Internal Server Error"
+        - probability: 0.1
+          status: 403
+          message: "Forbidden"
+          
 
   - path: /image
     method: GET
@@ -74,6 +86,10 @@ endpoints:
  - `count` — number of fake records to generate
  - `data` — JSON schema describing fields and their fake types (see supported types below)
  - `file` — path to static file to serve instead of JSON data
+ - `status` - HTTP response status code (default 200)
+ - `delay` - Response delay (`300ms`, `2s`, `1m`, etc.)
+ - `headers` - Custom HTTP headers
+ - `errors` - Probabilistic errors - an array of `probability`, `status`, `message`
 
 ---
 
@@ -114,6 +130,17 @@ Dynamic JSON endpoints support optional query parameters to customize the respon
 ```bash
 GET /usrs?count=10&sort=name&order=desc&filter=email:gmail.com
 ```
+
+---
+
+## Static files
+
+If the endpoint contains a file field, the server will simply return the contents of the file with the correct MIME type.
+
+### Supported formats:
+ - Images: `.jpg`, `.jpeg`, `.png`, `.gif`
+ - Videos: `.mp4`
+ - Other: `application/octet-stream`
 
 ---
 
