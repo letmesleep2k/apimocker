@@ -61,6 +61,18 @@ endpoints:
     method: GET
     count: 5
     data: '{"id": "uuid", "name": "name", "email": "email"}'
+    status: 200
+    delay: "500ms"
+    headers:
+        X-Custom-Header: "ReverofAtir!"
+    errors:
+        - probability: 0.2
+          status: 500
+          message: "Internal Server Error"
+        - probability: 0.1
+          status: 403
+          message: "Forbidden"
+          
 
   - path: /image
     method: GET
@@ -74,26 +86,30 @@ endpoints:
  - `count` — number of fake records to generate
  - `data` — JSON schema describing fields and their fake types (see supported types below)
  - `file` — path to static file to serve instead of JSON data
+ - `status` - HTTP response status code (default 200)
+ - `delay` - Response delay (`300ms`, `2s`, `1m`, etc.)
+ - `headers` - Custom HTTP headers
+ - `errors` - Probabilistic errors - an array of `probability`, `status`, `message`
 
 ---
 
 ## Supported fake data types
 
- - `uuid`
- - `name`
- - `email`
- - `bool`
- - `int`
- - `string`
- - `lat` (latitude)
- - `lng` (longitude)
- - `ipv4`
- - `url`
- - `username`
- - `password`
- - `phone`
- - `date`
- - `timestamp` (current UNIX timestamp)
+ - `uuid` - Universally unique identifier (e.g. `a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
+ - `name` - Full name of a person (e.g. `Margo Hani`)
+ - `email` - Random email address (e.g. `john.gabby@example.com`)
+ - `bool` - Boolean value (`true` or `false`)
+ - `int` - Integer number (default range: 0-999)
+ - `string` - Random single word (e.g. `lorem`, `ipsum`)
+ - `lat` - Latitude value as float (e.g. `51.5074`)
+ - `lng` - Longitude value as float (e.g. `-0.1278`)
+ - `ipv4` - Random IPv4 address (e.g. `192.168.0.1`)
+ - `url` - Random URL (e.g. `https://exmpl.com`)
+ - `username` - Random username (e.g. `roufRegard`)
+ - `password` - Random password string (e.g. `8D#wq2ID`)
+ - `phone` - Random phone number (e.g. `+44-74-0537-1411`)
+ - `date` - Random date string (format: `YYYY-MM-DD`)
+ - `timestamp` - Current Unix timestamp (e.g. `1717144854`)
 
 ---
 
@@ -112,8 +128,19 @@ Dynamic JSON endpoints support optional query parameters to customize the respon
 ### Example usage:
 
 ```bash
-GET /usrs?count=10&sort=name&order=desc&filter=email:gmail.com
+GET /users?count=10&sort=name&order=desc&filter=email:gmail.com
 ```
+
+---
+
+## Static files
+
+If the endpoint contains a file field, the server will simply return the contents of the file with the correct MIME type.
+
+### Supported formats:
+ - Images: `.jpg`, `.jpeg`, `.png`, `.gif`
+ - Videos: `.mp4`
+ - Other: `application/octet-stream`
 
 ---
 
