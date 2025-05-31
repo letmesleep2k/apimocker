@@ -128,7 +128,7 @@ Dynamic JSON endpoints support optional query parameters to customize the respon
 ### Example usage:
 
 ```bash
-GET /usrs?count=10&sort=name&order=desc&filter=email:gmail.com
+GET /users?count=10&sort=name&order=desc&filter=email:gmail.com
 ```
 
 ---
