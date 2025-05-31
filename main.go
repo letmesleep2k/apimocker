@@ -141,7 +141,6 @@ func generateFakeData(schema string, count int) ([]map[string]interface{}, error
 }
 
 
-
 func serveFileHandler(path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ext := filepath.Ext(path)
@@ -189,7 +188,13 @@ func startServer(config *Config) []string {
 				if parsedCount, err := strconv.Atoi(countStr); err == nil && parsedCount > 0 {
 					count = parsedCount
 				}
+			} else if limitStr := params.Get("limit"); limitStr != "" {
+				if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+					count = parsedLimit
+				}
 			}
+
+
 			generateCount := count
 	
 			data, err := generateFakeData(endpoint.Data, generateCount)
