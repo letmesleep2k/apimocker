@@ -32,7 +32,7 @@ type Endpoint struct {
 	Status int `yaml:"status" json:"status"`
 	Delay string `yaml:"delay" json:"delay"`
 	Headers map[string]string `yaml:"headers" json:"headers"`
-	Errors []ErrorConfig
+	Errors []ErrorConfig `yaml:"errors" json:"errors"`
 }
 
 type ErrorConfig struct {

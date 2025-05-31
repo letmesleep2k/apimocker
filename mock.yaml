@@ -27,11 +27,11 @@ endpoints:
   - path: /userd
     method: GET
     status: 200
-    delay: 1s
+    delay: 500ms
     headers:
       X-Test-Mode: "true"
       X-API-Version: "v1"
-      X-Custom-Header: "GoodNight!"
+      X-Custom-Header: "ReverofAtir!"
     data: |
       {
         "id": "uuid",
@@ -49,7 +49,7 @@ endpoints:
   - path: /products
     method: GET
     status: 201
-    delay: 1s
+    delay: 2s
     headers:
       Cache-Control: "no-cache"
     data: |
