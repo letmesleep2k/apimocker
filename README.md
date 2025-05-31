@@ -95,21 +95,21 @@ endpoints:
 
 ## Supported fake data types
 
- - `uuid`
- - `name`
- - `email`
- - `bool`
- - `int`
- - `string`
- - `lat` (latitude)
- - `lng` (longitude)
- - `ipv4`
- - `url`
- - `username`
- - `password`
- - `phone`
- - `date`
- - `timestamp` (current UNIX timestamp)
+ - `uuid` - Universally unique identifier (e.g. `a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
+ - `name` - Full name of a person (e.g. `Margo Hani`)
+ - `email` - Random email address (e.g. `john.gabby@example.com`)
+ - `bool` - Boolean value (`true` or `false`)
+ - `int` - Integer number (default range: 0-999)
+ - `string` - Random single word (e.g. `lorem`, `ipsum`)
+ - `lat` - Latitude value as float (e.g. `51.5074`)
+ - `lng` - Longitude value as float (e.g. `-0.1278`)
+ - `ipv4` - Random IPv4 address (e.g. `192.168.0.1`)
+ - `url` - Random URL (e.g. `https://exmpl.com`)
+ - `username` - Random username (e.g. `roufRegard`)
+ - `password` - Random password string (e.g. `8D#wq2ID`)
+ - `phone` - Random phone number (e.g. `+44-74-0537-1411`)
+ - `date` - Random date string (format: `YYYY-MM-DD`)
+ - `timestamp` - Current Unix timestamp (e.g. `1717144854`)
 
 ---
 
