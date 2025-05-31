@@ -439,25 +439,26 @@ Additional features:
  - Custom headers
  - Error simulation with probability
 
-		Example config:
-		endpoints:
-			- path: /users
-			  method: GET
-			  status: 200
-			  delay: 500ms
-			  headers:
-			  	X-Test-Mode: "true"
-				X-API-Version: "v1"
-			  data: |
-				{
-					"id": "uuid",
-					"name": "name",
-					"email": "email"
-				}
-			  errors:
-			  	- probability: 0.1
-				  status: 500
-				  message: "Internal server error"
+Example config:
+port: 5050
+endpoints:
+  - path: /users
+    method: GET
+    status: 200
+    delay: 500ms
+    headers:
+        X-Test-Mode: "true"
+        X-API-Version: "v1"
+    data: |
+        {
+            "id": "uuid",
+            "name": "name",
+            "email": "email"
+        }
+    errors:
+      - probability: 0.1
+        status: 500
+        message: "Internal server error"
 
 Examples:
  - GET /users?count=10
