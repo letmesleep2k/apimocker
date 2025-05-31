@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	// "sort"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -140,6 +140,88 @@ func generateFakeData(schema string, count int) ([]map[string]interface{}, error
 	return result, nil
 }
 
+func applyQueryFilters(data []map[string]interface{}, params url.Values) []map[string]interface{} {
+	result := data
+
+	if filter := params.Get("filter"); filter != "" {
+		parts := strings.SplitN(filter, ":", 2)
+		if len(parts) == 2 {
+			field := parts[0]
+			value := parts[1]
+			var filtered []map[string]interface{}
+			for _, item := range result {
+				if itemValue, exists := item[field]; exists {
+					itemStr := fmt.Sprintf("%v", itemValue)
+					if strings.Contains(strings.ToLower(itemStr), strings.ToLower(value)) {
+						filtered = append(filtered, item)
+					}
+				}
+			}
+			result = filtered
+		}
+	}
+
+	if sortField := params.Get("sort"); sortField != "" {
+		order := params.Get("order")
+		if order == "" {
+			order = "asc"
+		}
+
+		sort.Slice(result, func(i, j int) bool {
+			val1, exists1 := result[i][sortField]
+			val2, exists2 := result[j][sortField]
+			
+			if !exists1 && !exists2 {
+				return false
+			}
+			if !exists1 {
+				return order == "desc"
+			}
+			if !exists2 {
+				return order == "asc"
+			}
+
+			str1 := fmt.Sprintf("%v", val1)
+			str2 := fmt.Sprintf("%v", val2)
+
+			if order == "desc" {
+				return str1 > str2
+			}
+			return str1 < str2
+		})
+	}
+
+	offset := 0
+	if offsetStr := params.Get("offset"); offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	if offset >= len(result) {
+		return []map[string]interface{}{}
+	}
+	if offset > 0 {
+		result = result[offset:]
+	}
+
+	count := len(result)
+	if countStr := params.Get("count"); countStr != "" {
+		if parsedCount, err := strconv.Atoi(countStr); err == nil && parsedCount > 0 {
+			count = parsedCount
+		} 
+	} else if limitStr := params.Get("limit"); limitStr != "" {
+		if parsedCount, err := strconv.Atoi(countStr); err == nil && parsedCount > 0 {
+			count = parsedCount
+		}
+	}
+
+	if count < len(result){
+		result = result[:count]
+	}
+
+	return result
+}
 
 func serveFileHandler(path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +290,23 @@ func startServer(config *Config) []string {
 			response := map[string]interface{}{
 				"data": filteredData,
 			}
+
+			if params.Get("meta") == "true" {
+				response["meta"] = map[string]interface{}{
+					"count": len(filteredData),
+					"total": len(data),
+					"offset": params.Get("offset"),
+					"limit": params.Get("count"),
+					"sort": params.Get("sort"),
+					"order": params.Get("order"),
+					"filter": params.Get("filter"),
+				}
+			} else {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(filteredData)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(response)
 
@@ -227,7 +326,22 @@ func main() {
 
 	var rootCmd = &cobra.Command{
 		Use: "apimocker",
-		Short: "Lightweight TUI/mock REST API server",
+		Short: "Lightweight TUI/mock REST API server with query parameter support",
+		Long: `apimocker - A lightweight mock REST API server with TUI interface.
+
+Supports dynamic query parameters:
+ - count/limit: number of items to return
+ - sort: field to sort by
+ - order: asc/desc (default: asc)
+ - filter: field:value to filter by
+ - offset: number of items to skip
+ - meta: include metadata in response (true/false)
+
+Example:
+ - GET /users?count=10
+ - GET /users?sort=name&order=desc
+ - GET /users?filter=name:john&count=5
+ - GET /users?offset=10&limit=20&meta=true`,
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := loadConfig(configPath)
 			if err != nil {
