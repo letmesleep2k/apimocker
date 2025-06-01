@@ -145,6 +145,10 @@ logging:
     format: json
     output: logs/mock-api.log
 ```
+```yaml
+logging:
+    enabled: false
+```
 
 ---
 
