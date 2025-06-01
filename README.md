@@ -14,6 +14,7 @@ Ideal for frontend development, testing, and API prototyping. Supports dynamic f
 - Interactive TUI showing running endpoints and allowing graceful exit  
 - Simple CLI interface powered by Cobra
 - Support for query parameters to control response data (e.g. `?count=5&sort=name&order=desc`)
+- Allows logging to a file and to the console, with the ability to select the format
 
 ---
 
