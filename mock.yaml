@@ -1,4 +1,8 @@
 port: 8091
+logging:
+  enabled: true
+  format: json
+  output: logs/requests.log
 endpoints:
   - path: /user
     method: GET
