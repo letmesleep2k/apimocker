@@ -56,6 +56,10 @@ Example `mock.yaml`:
 
 ```yaml
 port: 8080
+logging:
+  enabled: true
+  format: plain
+  output: stdout
 endpoints:
   - path: /users
     method: GET
@@ -90,6 +94,57 @@ endpoints:
  - `delay` - Response delay (`300ms`, `2s`, `1m`, etc.)
  - `headers` - Custom HTTP headers
  - `errors` - Probabilistic errors - an array of `probability`, `status`, `message`
+
+---
+
+### Logging
+
+The `apimocker` supports request logging with customizable output format and destination.
+
+#### Cofiguration of Logging
+
+Add the following section to your YAML/JSON config:
+```yaml
+logging:
+  enabled: true # Enable or disable logging
+  format: "plain" # "plain" or "json"
+  output: "stdout" # "stdout" or file file path (e.g. "logs.txt")
+```
+
+#### Log Formats
+
+ - `plain`:
+```bash
+[2025-05-31T13:15:42Z] GET /api/users?page=1 - 200 - 12ms - 127.0.0.1:49322 - 642 bytes
+```
+ - `json`:
+```json
+{
+  "timestamp": "2025-05-31T13:15:42Z",
+  "method": "GET",
+  "path": "/api/users",
+  "query": "page=1",
+  "status_code": 200,
+  "response_time": "12ms",
+  "user_agent": "curl/8.0.1",
+  "remote_addr": "127.0.0.1:49322",
+  "content_length": 642
+}
+```
+
+#### Output
+
+ - `stdout`: logs are printed directly to the terminal.
+ - `file path`: logs are appended to the specified file.
+
+#### Example
+
+```yaml
+logging:
+    enabled: true
+    format: json
+    output: logs/mock-api.log
+```
 
 ---
 
