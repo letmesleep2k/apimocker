@@ -1,8 +1,10 @@
 port: 8091
 logging:
   enabled: true
-  format: json
-  output: logs/requests.log
+  # format: json
+  format: plain
+  # output: /home/hani/golang/apimocker/logs/requests.log
+  output: stdout
 endpoints:
   - path: /user
     method: GET
