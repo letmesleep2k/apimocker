@@ -355,7 +355,7 @@ func applyQueryFilters(data []map[string]interface{}, params url.Values) []map[s
 			count = parsedCount
 		} 
 	} else if limitStr := params.Get("limit"); limitStr != "" {
-		if parsedCount, err := strconv.Atoi(countStr); err == nil && parsedCount > 0 {
+		if parsedCount, err := strconv.Atoi(limitStr); err == nil && parsedCount > 0 {
 			count = parsedCount
 		}
 	}
