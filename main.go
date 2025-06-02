@@ -111,7 +111,7 @@ func (l *Logger) LogRequest(reqLog RequestLog) {
 		if reqLog.Query != "" {
 			query = "?" + reqLog.Query
 		}
-		fmt.Fprintf(l.writer, "[%s] %s %s%s - %d - %s - %s - %d bytes\n",
+		fmt.Fprintf(l.writer, "[%s] %s %s%s - %d - %s - %s - %d bytes\r\n",
 			reqLog.Timestamp,
 			reqLog.Method,
 			reqLog.Path,
