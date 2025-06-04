@@ -1,4 +1,4 @@
-port: 8091
+port: 5050
 logging:
   enabled: true
   # format: json
@@ -63,4 +63,23 @@ endpoints:
         "id": "uuid",
         "title": "string",
         "price": "int"
+      }
+  - path: /admin
+    method: GET
+    auth:
+      type: basic
+      username: admin
+      password: BestPass
+    data: |
+      {
+        "message": "string"
+      }
+  - path: /dashboard
+    method: GET
+    auth:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoxNzQ5MTI4MDUyLCJuYW1lIjoiVXNlciAxIiwic3ViIjoiMTIxMjEyIiwidHlwZSI6ImFjY2VzcyJ9.hjE70NuDzfkBytovSB_LXaX-r7smRW1BYbU4LxbMlv0
+    data: |
+      {
+        "id": "uuid"
       }
