@@ -8,7 +8,7 @@ import (
 	// "io"
 	// "net/http"
 	"net/http/httptest"
-	// "net/url"
+	"net/url"
 	"os"
 	// "strings"
 	"testing"
@@ -379,6 +379,84 @@ func TestGenerateFakeData(t *testing.T) {
 				assert.IsType(t, []map[string]interface{}{}, data)
 				firstItem := data[0]
 				assert.NotEmpty(t, firstItem)
+			}
+		})
+	}
+}
+
+func TestApplyQueryFilters(t *testing.T) {
+	testData := []map[string]interface{}{
+		{"id": 1, "name": "Alice", "age": 30},
+		{"id": 2, "name": "Bob", "age": 25},
+		{"id": 3, "name": "Charlie", "age": 35},
+		{"id": 4, "name": "Alice", "age": 28},
+	}
+
+	tests := []struct{
+		name string
+		params map[string]string
+		expected int
+	}{
+		{
+			name: "no filters",
+			params: map[string]string{},
+			expected: 4,
+		},
+		{
+			name: "filter by name",
+			params: map[string]string{"filter": "name:Alice"},
+			expected: 2,
+		},
+		{
+			name: "limit count",
+			params: map[string]string{"count": "2"},
+			expected: 2,
+		},
+		{
+			name: "limit with alias",
+			params: map[string]string{"limit": "3"},
+			expected: 3,
+		},
+		{
+			name: "offset",
+			params: map[string]string{"offset": "1", "count": "2"},
+			expected: 2,
+		},
+		{
+			name: "sort ascending",
+			params: map[string]string{"sort": "age", "order": "asc"},
+			expected: 4,
+		},
+		{
+			name: "sort descending",
+			params: map[string]string{"sort": "age", "order": "desc"},
+			expected: 4,
+		},
+		{
+			name: "offset beyond data",
+			params: map[string]string{"offset": "10"},
+			expected: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			values := url.Values{}
+			for k, v := range tt.params {
+				values.Set(k, v)
+			}
+
+			result := applyQueryFilters(testData, values)
+			assert.Len(t, result, tt.expected)
+
+			if tt.params["sort"] == "age" {
+				if len(result) >= 2 {
+					if tt.params["order"] == "desc" {
+						assert.True(t, result[0]["age"].(int) >= result[1]["age"].(int))
+					} else {
+						assert.True(t, result[0]["age"].(int) <= result[1]["age"].(int))
+					}
+				}
 			}
 		})
 	}
