@@ -715,3 +715,30 @@ func TestCreateLoggingHandlerWithQueryParams(t *testing.T) {
 		})
 	}
 }
+
+func TestServeFileHandler(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "test.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	testContent := "Hello, World!"
+	_, err = tmpFile.WriteString(testContent)
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	logger := &Logger{writer: io.Discard, format: "json"}
+	endpoint := Endpoint{
+		Path: "/file",
+		File: tmpFile.Name(),
+	}
+	
+	handler := serveFileHandler(tmpFile.Name(), endpoint, logger)
+
+	req := httptest.NewRequest("GET", "/file", nil)
+	rr := httptest.NewRecorder()
+
+	handler(rr, req)
+
+	assert.Equal(t, 200, rr.Code)
+	assert.Contains(t, rr.Body.String(), testContent)
+}
