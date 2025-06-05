@@ -461,3 +461,64 @@ func TestApplyQueryFilters(t *testing.T) {
 		})
 	}
 }
+
+func TestNewLogger(t *testing.T) {
+	tests := []struct {
+		name string
+		config LogConfig
+		wantErr bool
+	} {
+		{
+			name: "disabled logger",
+			config: LogConfig{
+				Enabled: false,
+				Format: "json",
+				Output: "stdout",
+			},
+			wantErr: false,
+		},
+		{
+			name: "stdout logger",
+			config: LogConfig{
+				Enabled: true,
+				Format: "plain",
+				Output: "stdout",
+			},
+			wantErr: false,
+		},
+		{
+			name: "file logger",
+			config: LogConfig{
+				Enabled: true,
+				Format: "json",
+				Output: "/tmp/test.log",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, err := NewLogger(tt.config)
+
+			if tt.wantErr{
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.NotNil(t, logger)
+
+			reqLog := RequestLog{
+				Timestamp: time.Now().Format(time.RFC3339),
+				Method: "GET",
+				Path: "/test",
+				StatusCode: 200,
+				ResponseTime: "10ms",
+				RemoteAddr: "127.0.0.1",
+			}
+
+			logger.LogRequest(reqLog)
+		})
+	}
+}
