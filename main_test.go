@@ -830,7 +830,7 @@ endpoints:
       token: admin-secret
 `
 
-	tmpFile, err := os.CreateTemp("", "config.yaml")
+	tmpFile, err := os.CreateTemp("", "*.yaml")
 	require.NoError(t, err)
 	defer os.Remove(tmpFile.Name())
 
