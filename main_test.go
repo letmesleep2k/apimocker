@@ -128,3 +128,51 @@ func TestParseDuration(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldTriggerError(t *testing.T) {
+	tests := []struct {
+		name string
+		errors []ErrorConfig
+		runs int
+	}{
+		{
+			name: "no errors configured",
+			errors: []ErrorConfig{},
+			runs: 10,
+		},
+		{
+			name: "100% probability error",
+			errors: []ErrorConfig{
+				{Probability: 1.0, Status: 500, Message: "Always fails"},
+			},
+			runs: 5,
+		},
+		{
+			name: "0% probability error",
+			errors: []ErrorConfig{
+				{Probability: 0.0, Status: 500, Message: "Never fails"},
+			},
+			runs: 10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errorCount := 0
+			for i := 0; i < tt.runs; i++ {
+				triggered, _ := shouldTriggerError(tt.errors)
+				if triggered {
+					errorCount++
+				}
+			}
+
+			if len(tt.errors) == 0 {
+				assert.Equal(t, 0, errorCount, "No error should be triggered")
+			} else if tt.errors[0].Probability == 1.0 {
+				assert.Equal(t, tt.runs, errorCount, "All requests should trigger error")
+			} else if tt.errors[0].Probability == 0.0 {
+				assert.Equal(t, 0, errorCount, "No requests should trigger error")
+			}
+		})
+	}
+}
