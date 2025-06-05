@@ -15,6 +15,7 @@ Ideal for frontend development, testing, and API prototyping. Supports dynamic f
 - Simple CLI interface powered by Cobra
 - Support for query parameters to control response data (e.g. `?count=5&sort=name&order=desc`)
 - Allows logging to a file and to the console, with the ability to select the format
+- Ability to define authorisation (from the supported options: Basic and Bearer)
 
 ---
 
@@ -82,6 +83,29 @@ endpoints:
   - path: /image
     method: GET
     file: "./static/sample.jpg"
+
+  - path: /admin
+    method: GET
+    auth: 
+        type: basic
+        username: admin
+        password: tsebehtsiogram
+    data: |
+        {
+            "id":"uuid",
+            "name":"name",
+            "email":"email"
+        }
+
+  - path: /checkAccess
+    method: GET
+    auth:
+        type: bearer
+        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJNYXJnYXJpdGEiLCJpYXQiOjE3NDkxMjg3NDAsInN1YiI6ImlzIHRoZSBiZXN0IGdpcmwifQ.YzfJg-lYeAA5av1ZQAA_dC_GTV-n8ph0HzVc0Drt6lw
+    data: |
+        {
+            "id": "uuid"
+        }
 ```
 
 ### Endpoint fields
