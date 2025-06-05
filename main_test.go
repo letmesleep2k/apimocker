@@ -340,3 +340,46 @@ func TestAuthenticateRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateFakeData(t *testing.T) {
+	tests := []struct {
+		name string
+		schema string
+		count int
+	}{
+		{
+			name: "valid JSON schema",
+			schema: `{"id": "uuid", "name": "name", "email": "email"}`,
+			count: 3,
+		},
+		{
+			name: "invalid JSON schema - fallbakc to faker",
+			schema: "invalid json",
+			count: 2,
+		},
+		{
+			name: "supported field types",
+			schema: `{"id": "uuid", "flag": "bool", "number": "int", "location": "lat"}`,
+			count: 1,
+		},
+		{
+			name: "unsupported field type",
+			schema: `{"id": "uuid", "unknown": "unsupported"}`,
+			count: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := generateFakeData(tt.schema, tt.count)
+			require.NoError(t, err)
+			assert.Len(t, data, tt.count)
+
+			if tt.count > 0 {
+				assert.IsType(t, []map[string]interface{}{}, data)
+				firstItem := data[0]
+				assert.NotEmpty(t, firstItem)
+			}
+		})
+	}
+}
