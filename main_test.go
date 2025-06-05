@@ -776,3 +776,14 @@ func TestServeFileHandlerWithAuth(t *testing.T) {
 	assert.Equal(t, 200, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Secret content")
 }
+
+func BenchmarkGenerateFakeData(b *testing.B) {
+	schema := `{"id": "uuid", "name": "name", "email": "email", "active": "bool"}`
+
+	for i := 0; i < b.N; i++ {
+		_, err := generateFakeData(schema, 100)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
