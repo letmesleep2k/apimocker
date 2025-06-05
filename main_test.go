@@ -3,7 +3,7 @@ package main
 import (
 	// "bytes"
 	"encoding/base64"
-	// "encoding/json"
+	"encoding/json"
 	// "fmt"
 	"io"
 	// "net/http"
@@ -644,6 +644,74 @@ func TestCreateLoggingHandler(t *testing.T) {
 					assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 				}
 			}
+		})
+	}
+}
+
+func TestCreateLoggingHandlerWithQueryParams(t *testing.T) {
+	logger := &Logger{writer: io.Discard, format: "json"}
+	endpoint := Endpoint{
+		Path: "/users",
+		Method: "GET",
+		Status: 200,
+		Data: `{"id": "uuid", "name": "name", "email": "email"}`,
+		Count: 5,
+	}
+
+	handler := createLoggingHandler(endpoint, logger)
+
+	tests := []struct{
+		name string
+		queryParams string
+		checkFunc func(*testing.T, *httptest.ResponseRecorder)
+	}{
+		{
+			name: "count parameter",
+			queryParams: "?count=3",
+			checkFunc: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var data []map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &data)
+				require.NoError(t, err)
+				assert.Len(t, data, 3)
+			},
+		},
+		{
+			name: "limit parameter",
+			queryParams: "?limit=2",
+			checkFunc: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var data []map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &data)
+				require.NoError(t, err)
+				assert.Len(t, data, 2)
+			},
+		},
+		{
+			name: "meta parameter",
+			queryParams: "?meta=true&count=2",
+			checkFunc: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]interface{}
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				
+				assert.Contains(t, response, "data")
+				assert.Contains(t, response, "meta")
+				
+				meta := response["meta"].(map[string]interface{})
+				assert.Contains(t, meta, "count")
+				assert.Contains(t, meta, "total")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/users"+tt.queryParams, nil)
+			rr := httptest.NewRecorder()
+
+			handler(rr, req)
+
+			assert.Equal(t, 200, rr.Code)
+			tt.checkFunc(t, rr)
 		})
 	}
 }
