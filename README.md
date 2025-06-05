@@ -10,12 +10,13 @@ Ideal for frontend development, testing, and API prototyping. Supports dynamic f
 - Define multiple API endpoints with HTTP method, path, and response data schema  
 - Generate fake JSON responses dynamically using flexible templates  
 - Serve static files (images, videos, etc.) as API responses  
+- Authentication support - Basic Auth and Bearer Token authentication
 - Configurable via YAML or JSON file  
 - Interactive TUI showing running endpoints and allowing graceful exit  
 - Simple CLI interface powered by Cobra
 - Support for query parameters to control response data (e.g. `?count=5&sort=name&order=desc`)
 - Allows logging to a file and to the console, with the ability to select the format
-- Ability to define authorisation (from the supported options: Basic and Bearer)
+- Enchanced logging with authentication details
 
 ---
 
@@ -101,7 +102,7 @@ endpoints:
     method: GET
     auth:
         type: bearer
-        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJNYXJnYXJpdGEiLCJpYXQiOjE3NDkxMjg3NDAsInN1YiI6ImlzIHRoZSBiZXN0IGdpcmwifQ.YzfJg-lYeAA5av1ZQAA_dC_GTV-n8ph0HzVc0Drt6lw
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJNYXJnYXJpdGEiLCJpYXQiOjE3NDkxMjg3NDAsInN1YiI6ImlzIHRoZSBiZXN0IGdpcmwifQ.YzfJg-lYeAA5av1ZQAA_dC_GTV-n8ph0HzVc0Drt6lw"
     data: |
         {
             "id": "uuid"
@@ -119,6 +120,63 @@ endpoints:
  - `delay` - Response delay (`300ms`, `2s`, `1m`, etc.)
  - `headers` - Custom HTTP headers
  - `errors` - Probabilistic errors - an array of `probability`, `status`, `message`
+ - `auth` - Authentication configuration (optional)
+
+---
+
+### Authentication
+
+The `apimocker` supports two types of authentication that can be configured per endpoint:
+
+#### Basic Authentication
+
+Configure Basic Auth with username and password:
+```yaml
+auth:
+    type: basic
+    username: "superADMIN"
+    password: "atirevoli"
+```
+
+##### Usage:
+```bash
+# Using curl with Basic Auth
+curl -H "Authorization: Basic c3VwZXJBRE1JTjphdGlyZXZvbGk=" http://localhost:8080/admin
+
+# Or using username:password format
+curl -u superADMIN:atirevoli http://localhost:8080/admin
+```
+
+#### Bearer Token Authentication
+
+Configure Bearer Token authentication:
+```yaml
+auth:
+    type: bearer
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJNYXJnYXJpdGEiLCJpYXQiOjE3NDkxMjg3NDAsInN1YiI6ImlzIHRoZSBiZXN0IGdpcmwifQ.YzfJg-lYeAA5av1ZQAA_dC_GTV-n8ph0HzVc0Drt6lw"
+```
+
+##### Usage:
+```bash
+# Using curl with Bearer Token
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJNYXJnYXJpdGEiLCJpYXQiOjE3NDkxMjg3NDAsInN1YiI6ImlzIHRoZSBiZXN0IGdpcmwifQ.YzfJg-lYeAA5av1ZQAA_dC_GTV-n8ph0HzVc0Drt6lw" http://localhost:8080/users
+```
+
+#### Authentication Behavior
+ - Protected endpoints: Return `401 Unauthorized` when authentication fails
+ - Public endpoints: No `auth` field means the endpoint is publicly accessible
+ - Authentication logging: All authentication attempts are logger with result status
+ - Error responses: Failed authentication return JSON error message
+
+#### Authentication Error Responses
+
+When authentication fails, the server return:
+```json
+{
+    "error": "Authentication required"
+}
+```
+With HTTP status code `401 Unauthorized`
 
 ---
 
@@ -140,7 +198,7 @@ logging:
 
  - `plain`:
 ```bash
-[2025-05-31T13:15:42Z] GET /api/users?page=1 - 200 - 12ms - 127.0.0.1:49322 - 642 bytes
+[2025-05-31T13:15:42Z] GET /api/users?page=1 - 200 - 12ms - 127.0.0.1:49322 - 642 bytes - Auth: bearer (success)
 ```
  - `json`:
 ```json
@@ -153,9 +211,26 @@ logging:
   "response_time": "12ms",
   "user_agent": "curl/8.0.1",
   "remote_addr": "127.0.0.1:49322",
-  "content_length": 642
+  "content_length": 642,
+  "auth_type": "bearer",
+  "auth_result": "success"
 }
 ```
+
+#### Authentication Log Fields
+
+The following authentication-related fields are included in logs:
+ - `auth_type`: Type of authentication used (`basic`, `bearer`, or empty for public endpoints)
+ - `auth_result`: Result of authentication attempts:
+    - `success`: Authentication successed
+    - `no-auth`: No authentication configured for endpoint
+    - `missing-auth`: No Authorization header provided
+    - `invalid-credentials`: Wrong username/password for Basic Auth
+    - `invalid-token`: Wrong token for Bearer Auth
+    - `invalid-basic-format`: Malformed Basic Auth header
+    - `invalid-bearer-format`: Malformed Bearer Token header
+    - `invalid-base64`: Invalid Base64 encoding in Basic Auth
+    - `invalid-credentials-format`: Invalid format in Basic Auth credentials
 
 #### Output
 
@@ -212,7 +287,37 @@ Dynamic JSON endpoints support optional query parameters to customize the respon
 ### Example usage:
 
 ```bash
+# Public endpoint
 GET /users?count=10&sort=name&order=desc&filter=email:gmail.com
+
+# Protected endpoint with Bearer token
+curl -H "Authorization: Bearer mysecrettoken123" \
+  "http://localhost:8080/users?count=5&meta=true"
+
+# Protected endpoint with Basic auth
+curl -u admin:secret123 \
+  "http://localhost:8080/admin?count=1"
+```
+
+---
+
+## Metadata Response
+When `meta=true` is included in the query parameters, the response includes additional metadata:
+
+```json
+{
+  "data": [...],
+  "meta": {
+    "count": 5,
+    "total": 100,
+    "offset": "0",
+    "limit": "5",
+    "sort": "name",
+    "order": "asc",
+    "filter": "",
+    "status": 200
+  }
+}
 ```
 
 ---
