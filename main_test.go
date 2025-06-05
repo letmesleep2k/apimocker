@@ -742,3 +742,37 @@ func TestServeFileHandler(t *testing.T) {
 	assert.Equal(t, 200, rr.Code)
 	assert.Contains(t, rr.Body.String(), testContent)
 }
+
+func TestServeFileHandlerWithAuth(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "test.txt")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("Secret content")
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	logger := &Logger{writer: io.Discard, format: "json"}
+	endpoint := Endpoint{
+		Path: "/secure-file",
+		File: tmpFile.Name(),
+		Auth: &AuthConfig{
+			Type: "bearer",
+			Token: "file-token",
+		},
+	}
+
+	handler := serveFileHandler(tmpFile.Name(), endpoint, logger)
+
+	req := httptest.NewRequest("GET", "/secure-file", nil)
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	assert.Equal(t, 401, rr.Code)
+
+	req = httptest.NewRequest("GET", "/secure-file", nil)
+	req.Header.Set("Authorization", "Bearer file-token")
+	rr = httptest.NewRecorder()
+	handler(rr, req)
+	assert.Equal(t, 200, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Secret content")
+}
