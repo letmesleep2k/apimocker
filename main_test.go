@@ -231,3 +231,45 @@ func TestAuthenticateBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthenticateBearer(t *testing.T) {
+	authConfig := &AuthConfig{
+		Type: "bearer",
+		Token: "valid-token-123",
+	}
+
+	tests := []struct {
+		name string
+		authHeader string
+		wantAuth bool
+		wantResult string
+	}{
+		{
+			name: "valid token",
+			authHeader: "Bearer valid-token-123",
+			wantAuth: true,
+			wantResult: "success",
+		},
+		{
+			name: "invalid token",
+			authHeader: "Bearer wrong-token",
+			wantAuth: false,
+			wantResult: "invalid-token",
+		},
+		{
+			name: "invalid format",
+			authHeader: "Basic dGVzdA==",
+			wantAuth: false,
+			wantResult: "invalid-bearer-format",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			success, authType, result := authenticateBearer(tt.authHeader, authConfig)
+			assert.Equal(t, tt.wantAuth, success)
+			assert.Equal(t, "bearer", authType)
+			assert.Equal(t, tt.wantResult, result)
+		})
+	}
+}
