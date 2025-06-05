@@ -2,7 +2,7 @@ package main
 
 import (
 	// "bytes"
-	// "encoding/base64"
+	"encoding/base64"
 	// "encoding/json"
 	// "fmt"
 	// "io"
@@ -173,6 +173,61 @@ func TestShouldTriggerError(t *testing.T) {
 			} else if tt.errors[0].Probability == 0.0 {
 				assert.Equal(t, 0, errorCount, "No requests should trigger error")
 			}
+		})
+	}
+}
+
+func TestAuthenticateBasic(t *testing.T) {
+	authConfig := &AuthConfig{
+		Type: "basic",
+		Username: "testuser",
+		Password: "testpass",
+	}
+
+	tests := []struct{
+		name string
+		authHeader string
+		wantAuth bool
+		wantResult string
+	}{
+		{
+			name: "valid credentials",
+			authHeader: "Basic " + base64.StdEncoding.EncodeToString([]byte("testuser:testpass")),
+			wantAuth: true,
+			wantResult: "success",
+		},
+		{
+			name: "invalid credentials",
+			authHeader: "Basic " + base64.StdEncoding.EncodeToString([]byte("wrong:wrong")),
+			wantAuth: false,
+			wantResult: "invalid-credentials",
+		},
+		{
+			name: "invalid format",
+			authHeader: "Bearer token123",
+			wantAuth: false,
+			wantResult: "invalid-basic-format",
+		},
+		{
+			name: "invalid base64",
+			authHeader: "Basic invalid-base64!",
+			wantAuth: false,
+			wantResult: "invalid-base64",
+		},
+		{
+			name: "missing colon",
+			authHeader: "Basic " + base64.StdEncoding.EncodeToString([]byte("userpass")),
+			wantAuth: false,
+			wantResult: "invalid-credentials-format",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			success, authType, result := authenticateBasic(tt.authHeader, authConfig)
+			assert.Equal(t, tt.wantAuth, success)
+			assert.Equal(t, "basic", authType)
+			assert.Equal(t, tt.wantResult, result)
 		})
 	}
 }
