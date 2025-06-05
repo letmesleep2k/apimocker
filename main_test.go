@@ -7,7 +7,7 @@ import (
 	// "fmt"
 	// "io"
 	// "net/http"
-	// "net/http/httptest"
+	"net/http/httptest"
 	// "net/url"
 	"os"
 	// "strings"
@@ -269,6 +269,73 @@ func TestAuthenticateBearer(t *testing.T) {
 			success, authType, result := authenticateBearer(tt.authHeader, authConfig)
 			assert.Equal(t, tt.wantAuth, success)
 			assert.Equal(t, "bearer", authType)
+			assert.Equal(t, tt.wantResult, result)
+		})
+	}
+}
+
+func TestAuthenticateRequest(t *testing.T) {
+	tests := []struct{
+		name string
+		authConfig *AuthConfig
+		authHeader string
+		wantAuth bool
+		wantType string
+		wantResult string
+	}{
+		{
+			name: "no auth required",
+			authConfig: nil,
+			authHeader: "",
+			wantAuth: true,
+			wantType: "",
+			wantResult: "no-auth",
+		},
+		{
+			name: "valid basic auth",
+			authConfig: &AuthConfig{
+				Type: "basic",
+				Username: "user",
+				Password: "pass",
+			},
+			authHeader: "Basic " + base64.StdEncoding.EncodeToString([]byte("user:pass")),
+			wantAuth: true,
+			wantType: "basic",
+			wantResult: "success",
+		},
+		{
+			name: "missing auth header",
+			authConfig: &AuthConfig{
+				Type: "bearer",
+				Token: "token123",
+			},
+			authHeader: "",
+			wantAuth: false,
+			wantType: "bearer",
+			wantResult: "missing-auth",
+		},
+		{
+			name: "invalid auth type",
+			authConfig: &AuthConfig{
+				Type: "invalid",
+			},
+			authHeader: "Bearer token",
+			wantAuth: false,
+			wantType: "invalid",
+			wantResult: "invalid-auth-type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/test", nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+
+			success, authType, result := authenticateRequest(req, tt.authConfig)
+			assert.Equal(t, tt.wantAuth, success)
+			assert.Equal(t, tt.wantType, authType)
 			assert.Equal(t, tt.wantResult, result)
 		})
 	}
