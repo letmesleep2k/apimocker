@@ -13,7 +13,7 @@ import (
 	// "strings"
 	"testing"
 	"path/filepath"
-	// "time"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,4 +107,24 @@ endpoints:
 	}
 }
 
+func TestParseDuration(t *testing.T) {
+	tests := []struct {
+		input string
+		expected time.Duration
+	}{
+		{"", 0},
+		{"100ms", 100 * time.Millisecond},
+		{"5s", 5 * time.Second},
+		{"2m", 2 * time.Minute},
+		{"1h30m", 90 * time.Minute},
+		{"invalid", 0},
+		{"100", 0},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := parseDuration(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
