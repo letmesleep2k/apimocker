@@ -4,7 +4,7 @@ import (
 	// "bytes"
 	"encoding/base64"
 	"encoding/json"
-	// "fmt"
+	"fmt"
 	"io"
 	// "net/http"
 	"net/http/httptest"
@@ -785,5 +785,27 @@ func BenchmarkGenerateFakeData(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func BenchmarkApplyQueryFilters(b *testing.B) {
+	testData := make([]map[string]interface{}, 1000)
+	for i := 0; i < 1000; i++ {
+		testData[i] = map[string]interface{}{
+			"id": i,
+			"name": fmt.Sprintf("User%d", i),
+			"age": 20 + (i % 50),
+		}
+	}
+
+	params := url.Values{}
+	params.Set("filter", "name:User1")
+	params.Set("soft", "age")
+	params.Set("order", "desc")
+	params.Set("count", "50")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		applyQueryFilters(testData, params)
 	}
 }
