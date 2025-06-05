@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	// "encoding/json"
 	// "fmt"
-	// "io"
+	"io"
 	// "net/http"
 	"net/http/httptest"
 	"net/url"
@@ -519,6 +519,131 @@ func TestNewLogger(t *testing.T) {
 			}
 
 			logger.LogRequest(reqLog)
+		})
+	}
+}
+
+func TestCreateLoggingHandler(t *testing.T) {
+	logger := &Logger{writer: io.Discard, format: "json"}
+
+	tests := []struct {
+		name string
+		endpoint Endpoint
+		method string
+		path string
+		authHeader string
+		expectedStatus int
+	}{
+		{
+			name: "successful request",
+			endpoint: Endpoint{
+				Path: "/test",
+				Method: "GET",
+				Status: 200,
+				Data: `{"id": "uuid"}`,
+				Count: 1,
+			},
+			method: "GET",
+			path: "/test",
+			expectedStatus: 200,
+		},
+		{
+			name: "method not allowed",
+			endpoint: Endpoint{
+				Path: "/test",
+				Method: "POST",
+				Status: 200,
+			},
+			method: "GET",
+			path: "/test",
+			expectedStatus: 405,
+		},
+		{
+			name: "unauthorized request",
+			endpoint: Endpoint{
+				Path: "/secure",
+				Method: "GET",
+				Status: 200,
+				Auth: &AuthConfig{
+					Type: "bearer",
+					Token: "secret",
+				},
+			},
+			method: "GET",
+			path: "/secure",
+			expectedStatus: 401,
+		},
+		{
+			name: "authorized request",
+			endpoint: Endpoint{
+				Path: "/secure",
+				Method: "GET",
+				Status: 200,
+				Data: `{"message": "success"}`,
+				Auth: &AuthConfig{
+					Type: "bearer",
+					Token: "secret",
+				},
+			},
+			method: "GET",
+			path: "/secure",
+			authHeader: "Bearer secret",
+			expectedStatus: 200,
+		},
+		{
+			name: "request with delay",
+			endpoint: Endpoint{
+				Path: "/slow",
+				Method: "GET",
+				Status: 200,
+				Data: `{"slow": true}`,
+				Delay: "10ms",
+			},
+			method: "GET",
+			path: "/slow",
+			expectedStatus: 200,
+		},
+		{
+			name: "request with custom headers",
+			endpoint: Endpoint{
+				Path: "/headers",
+				Method: "GET",
+				Status: 200,
+				Data: `{"test": true}`,
+				Headers: map[string]string{
+					"X-Custom-Header": "test-value",
+					"X-API-Version": "v1",
+				},
+			},
+			method: "GET",
+			path: "/headers",
+			expectedStatus: 200,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := createLoggingHandler(tt.endpoint, logger)
+
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+
+			rr := httptest.NewRecorder()
+			handler(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.expectedStatus == 200 {
+				for key, expectedValue := range tt.endpoint.Headers {
+					assert.Equal(t, expectedValue, rr.Header().Get(key))
+				}
+
+				if tt.endpoint.Data != "" {
+					assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+				}
+			}
 		})
 	}
 }
