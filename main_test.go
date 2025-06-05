@@ -809,3 +809,50 @@ func BenchmarkApplyQueryFilters(b *testing.B) {
 		applyQueryFilters(testData, params)
 	}
 }
+
+func TestIntegration(t *testing.T) {
+	configContent := `
+port: 0
+logging:
+  enabled: false
+endpoints:
+  - path: /users
+    method: GET
+    status: 200
+    count: 3
+    data: '{"id": "uuid", "name": "name", "email": "email"}'
+  - path: /admin
+    method: GET
+    status: 200
+    data: '{"admin": true}'
+    auth:
+      type: bearer
+      token: admin-secret
+`
+
+	tmpFile, err := os.CreateTemp("", "config.yaml")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString(configContent)
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	config, err := loadConfig(tmpFile.Name())
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, config.Port)
+	assert.Len(t, config.Endpoints, 2)
+
+	endpoint1 := config.Endpoints[0]
+	assert.Equal(t, "/users", endpoint1.Path)
+	assert.Equal(t, "GET", endpoint1.Method)
+	assert.Equal(t, 200, endpoint1.Status)
+	assert.Equal(t, 3, endpoint1.Count)
+
+	endpoint2 := config.Endpoints[1]
+	assert.Equal(t, "/admin", endpoint2.Path)
+	assert.NotNil(t, endpoint2.Auth)
+	assert.Equal(t, "bearer", endpoint2.Auth.Type)
+	assert.Equal(t, "admin-secret", endpoint2.Auth.Token)
+}
