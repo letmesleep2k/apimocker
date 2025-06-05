@@ -816,7 +816,7 @@ endpoints:
 		password: secret123
 	data: |
 		{
-			"message": "Admin access granted"
+			"id": "uuid"
 		}
 
 Examples:
